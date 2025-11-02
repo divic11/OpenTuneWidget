@@ -1,0 +1,71 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  release:
+    types: [created]   # 👈 Cuando creas una nueva release o tag, también generará y subirá el APK
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 🧩 1. Descargar el código del repo
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # ☕ 2. Instalar Java (recomendado JDK 17 para proyectos Android recientes)
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    # 🔧 3. Dar permisos a gradlew
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    # 🏗️ 4. Compilar el APK (modo debug o release)
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+
+    # 📦 5. Subir el APK como artefacto (descargable desde Actions)
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: app/build/outputs/apk/debug/app-debug.apk
+
+  release:
+    # 🏁 Este job se ejecuta solo cuando se crea una release en GitHub
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build Release APK
+      run: ./gradlew assembleRelease
+
+    # 🚀 6. Subir automáticamente el APK a la Release
+    - name: Upload APK to GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: app/build/outputs/apk/release/app-release.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
