@@ -100,6 +100,14 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.ColorUtils
 import androidx.core.net.toUri
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.compose.ui.platform.LocalView
+import android.app.Activity
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.Player.STATE_ENDED
@@ -150,6 +158,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import me.saket.squiggles.SquigglySlider
 import kotlin.math.roundToInt
+import android.content.Intent
+import android.net.Uri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -166,6 +176,7 @@ fun BottomSheetPlayer(
     val clipboardManager = LocalClipboardManager.current
 
     var showFullscreenLyrics by remember { mutableStateOf(false) }
+    var isFullscreen by rememberSaveable { mutableStateOf(false) }
 
     val playerConnection = LocalPlayerConnection.current ?: return
 
@@ -618,6 +629,22 @@ fun BottomSheetPlayer(
         },
     ) {
         val controlsContent: @Composable ColumnScope.(MediaMetadata) -> Unit = { mediaMetadata ->
+            // Back button when expanded
+            if (state.isExpanded) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = PlayerHorizontalPadding),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    IconButton(onClick = { state.collapseSoft() }) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                    Spacer(Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
             val playPauseRoundness by animateDpAsState(
                 targetValue = if (isPlaying) 24.dp else 36.dp,
                 animationSpec = tween(durationMillis = 90, easing = LinearEasing),
@@ -720,6 +747,32 @@ fun BottomSheetPlayer(
                         .fillMaxWidth()
                         .padding(horizontal = PlayerHorizontalPadding),
             ) {
+                // Fullscreen button for videos
+                if (mediaMetadata.isVideo) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                                .background(textButtonColor)
+                                .clickable {
+                                    // TODO: Implement fullscreen video toggle
+                                },
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.fullscreen),
+                            contentDescription = stringResource(R.string.fullscreen),
+                            colorFilter = ColorFilter.tint(iconButtonColor),
+                            modifier =
+                                Modifier
+                                    .align(Alignment.Center)
+                                    .size(24.dp),
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.size(12.dp))
+                }
+
                 Box(
                     modifier =
                         Modifier
@@ -886,6 +939,34 @@ fun BottomSheetPlayer(
 
 
 
+
+                Spacer(modifier = Modifier.size(12.dp))
+
+                Box(
+                    modifier =
+                        Modifier
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(textButtonColor)
+                            .clickable {
+                                val shareText = "Check out this song: ${mediaMetadata.title} by ${mediaMetadata.artists.joinToString(", ") { it.name }}"
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, "Share song"))
+                            },
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.share),
+                        contentDescription = stringResource(R.string.share),
+                        colorFilter = ColorFilter.tint(iconButtonColor),
+                        modifier =
+                            Modifier
+                                .align(Alignment.Center)
+                                .size(24.dp),
+                    )
+                }
 
                 Spacer(modifier = Modifier.size(12.dp))
 

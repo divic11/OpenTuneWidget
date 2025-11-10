@@ -123,8 +123,10 @@ fun Thumbnail(
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onTap = {
-                                    // MODIFICADO: Ahora abre letras en pantalla completa
-                                    onOpenFullscreenLyrics()
+                                    // MODIFICADO: Solo abre letras en pantalla completa si NO es video
+                                    if (mediaMetadata?.isVideo != true) {
+                                        onOpenFullscreenLyrics()
+                                    }
                                 },
                                 onDoubleTap = { offset ->
                                     if (offset.x < size.width / 2) {
